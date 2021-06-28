@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -22,7 +23,7 @@ public class Main extends JavaPlugin implements Listener {
     }
 
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlace(BlockPlaceEvent e) {
         if (e.getPlayer().getWorld() == Envoy){
             Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> {
