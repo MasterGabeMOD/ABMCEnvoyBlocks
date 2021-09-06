@@ -6,16 +6,17 @@ import org.bukkit.World;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class Main extends JavaPlugin implements Listener {
-    static World Envoy = Bukkit.getWorld("Envoy");
+    private World envoy;
 
     public void onEnable() {
-        this.getServer().getPluginManager().registerEvents(this, this);
+        Bukkit.getPluginManager().registerEvents(this, this);
         getLogger().info("ABMC Envoy successfully enabled!");
+
+        Bukkit.getScheduler().runTaskLater(this, () -> envoy = Bukkit.getWorld("Envoy"), 1L); // By delaying 1 tick, we allow the server to start up
     }
 
     public void onDisable() {
@@ -24,13 +25,19 @@ public class Main extends JavaPlugin implements Listener {
 
 
     @EventHandler(priority = EventPriority.HIGH)
-    public void onPlace(BlockPlaceEvent e) {
-        if (e.getPlayer().getWorld() == Envoy){
-            Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> {
-                e.getBlock().setType(Material.AIR);
-                e.getBlock().getWorld().playEffect(e.getBlock().getLocation(), org.bukkit.Effect.STEP_SOUND, 49);
-                System.out.println("wowi");
-            }, 15 * 10);
-        }
+    public void onPlace(BlockPlaceEvent event) { // Meaningful variable names
+        Player player = event.getPlayer();
+        World world = player.getWorld();
+        Block block = event.getBlock();
+
+        if (!world.getName().equalsIgnoreCase(envoy.getName()))
+            return;
+
+        Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> {
+            block.setType(Material.AIR);
+            world.playEffect(block.getLocation(), org.bukkit.Effect.STEP_SOUND, 49);
+            System.out.println("wowi");
+        }, 15 * 10);
+
     }
 }
