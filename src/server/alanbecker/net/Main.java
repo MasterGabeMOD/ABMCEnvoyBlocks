@@ -66,8 +66,20 @@ public void onFarm(PlayerInteractEvent e) {
       e.setCancelled(true);
     }  
 }
+
+@EventHandler
+public void onEnvoy(PlayerInteractEvent e) {
+  Player p = e.getPlayer();
+  Material s = p.getInventory().getItemInMainHand().getType();
+  Material st = p.getInventory().getItemInOffHand().getType();
+  if (e.getPlayer().getWorld() == Bukkit.getWorld("Envoy") && 
+    e.getAction().equals(Action.RIGHT_CLICK_BLOCK))
+    if (s.equals(Material.WOODEN_PICKAXE) || s.equals(Material.STONE_PICKAXE) || s.equals(Material.GOLDEN_PICKAXE) || s.equals(Material.DIAMOND_PICKAXE) || s.equals(Material.NETHERITE_PICKAXE)) {
+      e.setCancelled(true);
+    } else if (st.equals(Material.WOODEN_PICKAXE) || st.equals(Material.STONE_PICKAXE) || st.equals(Material.GOLDEN_PICKAXE) || st.equals(Material.DIAMOND_PICKAXE) || st.equals(Material.NETHERITE_PICKAXE)) {
+      e.setCancelled(true);
+    }  
+}
 }
 
-//TEST
 
-//HI WILL
