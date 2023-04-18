@@ -70,4 +70,3 @@ public class Main extends JavaPlugin implements Listener {
     }
 }
 
-//testing discord bot
