@@ -1,5 +1,5 @@
 package server.alanbecker.net;
-//
+//Work
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Material;
