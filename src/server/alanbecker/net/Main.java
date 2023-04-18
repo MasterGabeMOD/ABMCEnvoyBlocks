@@ -69,3 +69,5 @@ public class Main extends JavaPlugin implements Listener {
                 material == Material.NETHERITE_SHOVEL);
     }
 }
+
+//testing discord bot
