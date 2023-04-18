@@ -13,7 +13,6 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class Main extends JavaPlugin implements Listener {
-	
 
     public void onEnable() {
         this.getServer().getPluginManager().registerEvents(this, this);
@@ -24,62 +23,49 @@ public class Main extends JavaPlugin implements Listener {
         getLogger().info("ABMC Envoy successfully disabled!");
     }
 
-
     @EventHandler
     public void onPlace(BlockPlaceEvent e) {
-      if (e.getPlayer().getWorld() == Bukkit.getWorld("Envoy"))
-        Bukkit.getServer().getScheduler().scheduleSyncDelayedTask((Plugin)this, () -> {
-              e.getBlock().setType(Material.AIR);
-                e.getBlock().getWorld().playEffect(e.getBlock().getLocation(), org.bukkit.Effect.STEP_SOUND, 49);
+        if (e.getBlock().getWorld().getName().equals("Envoy"))
+            Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin)this, () -> {
+                e.getBlock().setType(Material.AIR);
+                e.getBlock().getWorld().playEffect(e.getBlock().getLocation(), Effect.STEP_SOUND, 49);
                 e.getBlock().getWorld().playEffect(e.getBlock().getLocation(), Effect.DRAGON_BREATH, 49);
-                System.out.println("wowi");
+                getLogger().info("wowi");
             }, 15 * 10);
-        }
-   
+    }
 
-@EventHandler
-public void onFarmland(PlayerInteractEvent e) {
-  Player p = e.getPlayer();
-  Material s = p.getInventory().getItemInMainHand().getType();
-  Material st = p.getInventory().getItemInOffHand().getType();
-  if (e.getPlayer().getWorld() == Bukkit.getWorld("Envoy") && 
-    e.getAction().equals(Action.RIGHT_CLICK_BLOCK))
-    if (s.equals(Material.WOODEN_HOE) || s.equals(Material.STONE_HOE) || s.equals(Material.GOLDEN_HOE) || s.equals(Material.DIAMOND_HOE) || s.equals(Material.NETHERITE_HOE)) {
-      e.setCancelled(true);
-    } else if (st.equals(Material.WOODEN_HOE) || st.equals(Material.STONE_HOE) || st.equals(Material.GOLDEN_HOE) || st.equals(Material.DIAMOND_HOE) || st.equals(Material.NETHERITE_HOE)) {
-      e.setCancelled(true);
-     
-    }  
+    @EventHandler
+    public void onToolUse(PlayerInteractEvent e) {
+        Player p = e.getPlayer();
+        Material heldItem = p.getInventory().getItemInHand().getType();
+        if (e.getPlayer().getWorld().getName().equals("Envoy") && 
+            e.getAction().equals(Action.RIGHT_CLICK_BLOCK) &&
+            (isPickaxe(heldItem) || isHoe(heldItem) || isShovel(heldItem))) {
+            e.setCancelled(true);
+        }  
+    }
+    
+    private boolean isPickaxe(Material material) {
+        return (material == Material.WOODEN_PICKAXE || 
+                material == Material.STONE_PICKAXE || 
+                material == Material.GOLDEN_PICKAXE || 
+                material == Material.DIAMOND_PICKAXE || 
+                material == Material.NETHERITE_PICKAXE);
+    }
+    
+    private boolean isHoe(Material material) {
+        return (material == Material.WOODEN_HOE || 
+                material == Material.STONE_HOE || 
+                material == Material.GOLDEN_HOE || 
+                material == Material.DIAMOND_HOE || 
+                material == Material.NETHERITE_HOE);
+    }
+    
+    private boolean isShovel(Material material) {
+        return (material == Material.WOODEN_SHOVEL || 
+                material == Material.STONE_SHOVEL || 
+                material == Material.GOLDEN_SHOVEL || 
+                material == Material.DIAMOND_SHOVEL || 
+                material == Material.NETHERITE_SHOVEL);
+    }
 }
-
-
-@EventHandler
-public void onFarm(PlayerInteractEvent e) {
-  Player p = e.getPlayer();
-  Material s = p.getInventory().getItemInMainHand().getType();
-  Material st = p.getInventory().getItemInOffHand().getType();
-  if (e.getPlayer().getWorld() == Bukkit.getWorld("Envoy") && 
-    e.getAction().equals(Action.RIGHT_CLICK_BLOCK))
-    if (s.equals(Material.WOODEN_SHOVEL) || s.equals(Material.STONE_SHOVEL) || s.equals(Material.GOLDEN_SHOVEL) || s.equals(Material.DIAMOND_SHOVEL) || s.equals(Material.NETHERITE_SHOVEL)) {
-      e.setCancelled(true);
-    } else if (st.equals(Material.WOODEN_SHOVEL) || st.equals(Material.STONE_SHOVEL) || st.equals(Material.GOLDEN_SHOVEL) || st.equals(Material.DIAMOND_SHOVEL) || st.equals(Material.NETHERITE_SHOVEL)) {
-      e.setCancelled(true);
-    }  
-}
-
-@EventHandler
-public void onEnvoy(PlayerInteractEvent e) {
-  Player p = e.getPlayer();
-  Material s = p.getInventory().getItemInMainHand().getType();
-  Material st = p.getInventory().getItemInOffHand().getType();
-  if (e.getPlayer().getWorld() == Bukkit.getWorld("Envoy") && 
-    e.getAction().equals(Action.RIGHT_CLICK_BLOCK))
-    if (s.equals(Material.WOODEN_PICKAXE) || s.equals(Material.STONE_PICKAXE) || s.equals(Material.GOLDEN_PICKAXE) || s.equals(Material.DIAMOND_PICKAXE) || s.equals(Material.NETHERITE_PICKAXE)) {
-      e.setCancelled(true);
-    } else if (st.equals(Material.WOODEN_PICKAXE) || st.equals(Material.STONE_PICKAXE) || st.equals(Material.GOLDEN_PICKAXE) || st.equals(Material.DIAMOND_PICKAXE) || st.equals(Material.NETHERITE_PICKAXE)) {
-      e.setCancelled(true);
-    }  
-}
-}
-
-
