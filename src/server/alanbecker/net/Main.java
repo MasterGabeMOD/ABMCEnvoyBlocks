@@ -9,65 +9,58 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public class Main extends JavaPlugin implements Listener {
+import java.util.EnumSet;
 
+public class Main extends JavaPlugin implements Listener {
+    private static final EnumSet<Material> TOOLS = EnumSet.of(
+        Material.WOODEN_PICKAXE, Material.STONE_PICKAXE, Material.IRON_PICKAXE,
+        Material.GOLDEN_PICKAXE, Material.DIAMOND_PICKAXE, Material.NETHERITE_PICKAXE,
+        Material.WOODEN_HOE, Material.STONE_HOE, Material.IRON_HOE,
+        Material.GOLDEN_HOE, Material.DIAMOND_HOE, Material.NETHERITE_HOE,
+        Material.WOODEN_SHOVEL, Material.STONE_SHOVEL, Material.IRON_SHOVEL,
+        Material.GOLDEN_SHOVEL, Material.DIAMOND_SHOVEL, Material.NETHERITE_SHOVEL
+    );
+    private long despawnDelay;
+    private Effect primaryEffect;
+    private Effect secondaryEffect;
+
+    @Override
     public void onEnable() {
-        this.getServer().getPluginManager().registerEvents(this, this);
+        saveDefaultConfig(); 
+        getServer().getPluginManager().registerEvents(this, this);
         getLogger().info("ABMC Envoy successfully enabled!");
+
+        despawnDelay = getConfig().getLong("despawn-delay");
+        primaryEffect = Effect.valueOf(getConfig().getString("effect.primary"));
+        secondaryEffect = Effect.valueOf(getConfig().getString("effect.secondary"));
     }
 
+    @Override
     public void onDisable() {
         getLogger().info("ABMC Envoy successfully disabled!");
     }
 
     @EventHandler
     public void onPlace(BlockPlaceEvent e) {
-        if (e.getBlock().getWorld().getName().equals("Envoy"))
-            Bukkit.getScheduler().scheduleSyncDelayedTask((Plugin)this, () -> {
+        if (e.getBlock().getWorld().getName().equals("Envoy") && !e.getPlayer().hasPermission("abmc.envoy.bypass")) {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> {
                 e.getBlock().setType(Material.AIR);
-                e.getBlock().getWorld().playEffect(e.getBlock().getLocation(), Effect.STEP_SOUND, 49);
-                e.getBlock().getWorld().playEffect(e.getBlock().getLocation(), Effect.DRAGON_BREATH, 49);
-                getLogger().info("wowi");
-            }, 15 * 10);
+                e.getBlock().getWorld().playEffect(e.getBlock().getLocation(), primaryEffect, Material.BEDROCK.createBlockData());
+                e.getBlock().getWorld().playEffect(e.getBlock().getLocation(), secondaryEffect, 0);
+            }, despawnDelay); 
+        }
     }
 
     @EventHandler
     public void onToolUse(PlayerInteractEvent e) {
         Player p = e.getPlayer();
-        Material heldItem = p.getInventory().getItemInHand().getType();
-        if (e.getPlayer().getWorld().getName().equals("Envoy") && 
-            e.getAction().equals(Action.RIGHT_CLICK_BLOCK) &&
-            (isPickaxe(heldItem) || isHoe(heldItem) || isShovel(heldItem))) {
+        Material heldItem = p.getInventory().getItemInMainHand().getType();
+        if ("Envoy".equals(p.getWorld().getName()) && 
+            e.getAction() == Action.RIGHT_CLICK_BLOCK &&
+            TOOLS.contains(heldItem)) {
             e.setCancelled(true);
-        }  
-    }
-    
-    private boolean isPickaxe(Material material) {
-        return (material == Material.WOODEN_PICKAXE || 
-                material == Material.STONE_PICKAXE || 
-                material == Material.GOLDEN_PICKAXE || 
-                material == Material.DIAMOND_PICKAXE || 
-                material == Material.NETHERITE_PICKAXE);
-    }
-    
-    private boolean isHoe(Material material) {
-        return (material == Material.WOODEN_HOE || 
-                material == Material.STONE_HOE || 
-                material == Material.GOLDEN_HOE || 
-                material == Material.DIAMOND_HOE || 
-                material == Material.NETHERITE_HOE);
-    }
-    
-    private boolean isShovel(Material material) {
-        return (material == Material.WOODEN_SHOVEL || 
-                material == Material.STONE_SHOVEL || 
-                material == Material.GOLDEN_SHOVEL || 
-                material == Material.DIAMOND_SHOVEL || 
-                material == Material.NETHERITE_SHOVEL);
+        }
     }
 }
-
-// Lots of blocks
