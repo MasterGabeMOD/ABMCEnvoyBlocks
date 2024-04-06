@@ -2,3 +2,6 @@ despawn-delay: 150
 effect:
   primary: STEP_SOUND
   secondary: DRAGON_BREATH
+whitelist:
+  - DIRT
+  - STONE

@@ -1,6 +1,6 @@
-main: server.alanbecker.net.Main
-version: 1.0
-api-version: 1.19
+main: server.alanbecker.net.EnvoyBlocks
+version: 2.0
+api-version: 1.20
 name: ABMCEnvoyBlocks
 authors:
   - MasterGabeMOD
@@ -9,3 +9,10 @@ permissions:
   abmc.envoy.bypass:
     description: Allows bypassing block placement restrictions in the Envoy world.
     default: op
+  envoyblocks.reload:
+    description: Allows the player to reload the EnvoyBlocks configuration.
+    default: op
+commands:
+  envoyblocks:
+    description: Reloads the EnvoyBlocks configuration.
+    usage: /<command>
