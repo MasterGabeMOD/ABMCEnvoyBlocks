@@ -1,6 +1,5 @@
 package server.alanbecker.net;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -12,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.event.block.Action;
 
 import java.util.EnumSet;
@@ -25,7 +25,8 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
         Material.WOODEN_HOE, Material.STONE_HOE, Material.IRON_HOE,
         Material.GOLDEN_HOE, Material.DIAMOND_HOE, Material.NETHERITE_HOE,
         Material.WOODEN_SHOVEL, Material.STONE_SHOVEL, Material.IRON_SHOVEL,
-        Material.GOLDEN_SHOVEL, Material.DIAMOND_SHOVEL, Material.NETHERITE_SHOVEL
+        Material.GOLDEN_SHOVEL, Material.DIAMOND_SHOVEL, Material.NETHERITE_SHOVEL,
+        Material.TRIDENT 
     );
 
     private long despawnDelay;
@@ -69,11 +70,14 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
             return;
         }
 
-        Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> {
-            e.getBlock().setType(Material.AIR);
-            e.getBlock().getWorld().playEffect(e.getBlock().getLocation(), primaryEffect, 0);
-            e.getBlock().getWorld().playEffect(e.getBlock().getLocation(), secondaryEffect, 0);
-        }, despawnDelay);
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                e.getBlock().setType(Material.AIR);
+                e.getBlock().getWorld().playEffect(e.getBlock().getLocation(), primaryEffect, 0);
+                e.getBlock().getWorld().playEffect(e.getBlock().getLocation(), secondaryEffect, 0);
+            }
+        }.runTaskLater(this, despawnDelay);
     }
 
     @Override
@@ -83,7 +87,7 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
                 sender.sendMessage("You do not have permission to perform this command.");
                 return true;
             }
-            
+
             loadConfig();
             sender.sendMessage("Configuration reloaded.");
             return true;
@@ -91,10 +95,9 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
         return false;
     }
 
-
     @EventHandler
     public void onToolUse(PlayerInteractEvent e) {
-        if (!"Envoy".equals(e.getPlayer().getWorld().getName()) || 
+        if (!"Envoy".equals(e.getPlayer().getWorld().getName()) ||
             e.getAction() != Action.RIGHT_CLICK_BLOCK ||
             !TOOLS.contains(e.getPlayer().getInventory().getItemInMainHand().getType())) {
             return;
