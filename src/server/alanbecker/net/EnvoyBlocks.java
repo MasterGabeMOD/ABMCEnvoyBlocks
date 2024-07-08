@@ -6,15 +6,24 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import net.md_5.bungee.api.ChatColor;
+
 import org.bukkit.event.block.Action;
 
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -80,6 +89,57 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
         }.runTaskLater(this, despawnDelay);
     }
 
+    @EventHandler
+    public void onToolUse(PlayerInteractEvent e) {
+        if (!"Envoy".equals(e.getPlayer().getWorld().getName()) ||
+            e.getAction() != Action.RIGHT_CLICK_BLOCK ||
+            !TOOLS.contains(e.getPlayer().getInventory().getItemInMainHand().getType())) {
+            return;
+        }
+
+        e.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent e) {
+        if ("Envoy".equals(e.getPlayer().getWorld().getName()) && 
+            e.getPlayer().isGliding() && 
+            e.getPlayer().getInventory().getChestplate() != null && 
+            e.getPlayer().getInventory().getChestplate().getType() == Material.ELYTRA) {
+            e.getPlayer().setGliding(false);
+            e.getPlayer().sendMessage(ChatColor.RED + "You cannot use Elytra in this world.");
+        }
+    }
+
+    @EventHandler
+    public void onPlayerTeleport(PlayerTeleportEvent e) {
+        if ("Envoy".equals(e.getTo().getWorld().getName()) && 
+            e.getPlayer().getInventory().getChestplate() != null && 
+            e.getPlayer().getInventory().getChestplate().getType() == Material.ELYTRA) {
+            removeElytra(e.getPlayer());
+            e.getPlayer().sendMessage(ChatColor.RED + "Elytra is not allowed in this world.");
+        }
+    }
+
+    @EventHandler
+    public void onPlayerArmorStandManipulate(PlayerArmorStandManipulateEvent e) {
+        if ("Envoy".equals(e.getPlayer().getWorld().getName()) && 
+            e.getArmorStandItem() != null && 
+            e.getArmorStandItem().getType() == Material.ELYTRA) {
+            e.setCancelled(true);
+            e.getPlayer().sendMessage(ChatColor.RED + "You cannot equip Elytra in this world.");
+        }
+    }
+
+    private void removeElytra(Player player) {
+        ItemStack elytra = player.getInventory().getChestplate();
+        player.getInventory().setChestplate(null);
+        HashMap<Integer, ItemStack> overflow = player.getInventory().addItem(elytra);
+        if (!overflow.isEmpty()) {
+            player.getWorld().dropItemNaturally(player.getLocation(), elytra);
+        }
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
@@ -93,16 +153,5 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
             return true;
         }
         return false;
-    }
-
-    @EventHandler
-    public void onToolUse(PlayerInteractEvent e) {
-        if (!"Envoy".equals(e.getPlayer().getWorld().getName()) ||
-            e.getAction() != Action.RIGHT_CLICK_BLOCK ||
-            !TOOLS.contains(e.getPlayer().getInventory().getItemInMainHand().getType())) {
-            return;
-        }
-
-        e.setCancelled(true);
     }
 }
