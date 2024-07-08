@@ -5,3 +5,7 @@ effect:
 whitelist:
   - DIRT
   - STONE
+anti-float:
+  enabled: true
+  threshold: 7
+  

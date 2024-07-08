@@ -7,6 +7,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -45,6 +46,8 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
     private Effect primaryEffect;
     private Effect secondaryEffect;
     private List<Material> whitelist;
+    private boolean antiFloatEnabled;
+    private int antiFloatThreshold;
     
     @Override
     public void onEnable() {
@@ -60,6 +63,8 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
         new BukkitRunnable() {
             @Override
             public void run() {
+                if (!antiFloatEnabled) return;
+
                 World world = Bukkit.getWorld("Envoy");
                 if (world == null) return; 
 
@@ -69,7 +74,7 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
                     }
 
                     int highestY = world.getHighestBlockYAt(player.getLocation());
-                    if (!player.isOnGround() && player.getLocation().getY() > highestY + 7) {
+                    if (!player.isOnGround() && player.getLocation().getY() > highestY + antiFloatThreshold) {
                         Location loc = player.getLocation();
                         loc.setY(highestY + 1.0);
                         player.teleport(loc);
@@ -81,6 +86,7 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
     }
 
 
+
     private void loadConfig() {
         reloadConfig();
         FileConfiguration config = getConfig();
@@ -90,6 +96,8 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
         whitelist = config.getStringList("whitelist").stream()
                 .map(Material::valueOf)
                 .collect(Collectors.toList());
+        antiFloatEnabled = config.getBoolean("anti-float.enabled");
+        antiFloatThreshold = config.getInt("anti-float.threshold");
     }
 
     @Override
@@ -193,14 +201,28 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
         }
     }
 
+    @EventHandler
+    public void onPlayerDamage(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Player)) return;
+
+        Player player = (Player) event.getEntity();
+        if (!"Envoy".equals(player.getWorld().getName())) return;
+
+        if (player.isGliding() || (player.getInventory().getChestplate() != null &&
+            player.getInventory().getChestplate().getType() == Material.ELYTRA)) {
+
+            event.setCancelled(false);
+        }
+    }
+
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
-            if (!sender.hasPermission("envoyblocks.reload")) {
-                sender.sendMessage("You do not have permission to perform this command.");
-                return true;
-            }
+    	if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
+    	    if (!sender.hasPermission("envoyblocks.reload")) {
+    	        sender.sendMessage("You do not have permission to perform this command.");
+    	        return true;
+    	    }
 
             loadConfig();
             sender.sendMessage("Configuration reloaded.");
