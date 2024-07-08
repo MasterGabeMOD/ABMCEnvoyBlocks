@@ -46,8 +46,6 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
     private Effect primaryEffect;
     private Effect secondaryEffect;
     private List<Material> whitelist;
-    private boolean antiFloatEnabled;
-    private int antiFloatThreshold;
     
     @Override
     public void onEnable() {
@@ -56,33 +54,6 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
         getServer().getPluginManager().registerEvents(this, this);
         this.getCommand("envoyblocks").setExecutor(this);
         getLogger().info("ABMC Envoy successfully enabled!");
-        startAntiFloatCheck();
-    }
-    
-    private void startAntiFloatCheck() {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (!antiFloatEnabled) return;
-
-                World world = Bukkit.getWorld("Envoy");
-                if (world == null) return; 
-
-                for (Player player : world.getPlayers()) {
-                    if (player.hasPermission("envoyblocks.flybypass")) {
-                        continue; 
-                    }
-
-                    int highestY = world.getHighestBlockYAt(player.getLocation());
-                    if (!player.isOnGround() && player.getLocation().getY() > highestY + antiFloatThreshold) {
-                        Location loc = player.getLocation();
-                        loc.setY(highestY + 1.0);
-                        player.teleport(loc);
-                        player.sendMessage(ChatColor.RED + "Unusual activity detected. You have been returned to the ground.");
-                    }
-                }
-            }
-        }.runTaskTimer(this, 20L, 20L); 
     }
 
 
@@ -96,8 +67,6 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
         whitelist = config.getStringList("whitelist").stream()
                 .map(Material::valueOf)
                 .collect(Collectors.toList());
-        antiFloatEnabled = config.getBoolean("anti-float.enabled");
-        antiFloatThreshold = config.getInt("anti-float.threshold");
     }
 
     @Override
