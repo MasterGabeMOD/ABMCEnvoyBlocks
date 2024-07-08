@@ -1,26 +1,29 @@
 package server.alanbecker.net;
 
-import org.bukkit.Effect;
 import org.bukkit.Material;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
+import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.PlayerToggleFlightEvent;
+import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
-
-import net.md_5.bungee.api.ChatColor;
-
-import org.bukkit.event.block.Action;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Effect;
+import org.bukkit.Location;
 
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -42,7 +45,7 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
     private Effect primaryEffect;
     private Effect secondaryEffect;
     private List<Material> whitelist;
-
+    
     @Override
     public void onEnable() {
         saveDefaultConfig();
@@ -50,7 +53,33 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
         getServer().getPluginManager().registerEvents(this, this);
         this.getCommand("envoyblocks").setExecutor(this);
         getLogger().info("ABMC Envoy successfully enabled!");
+        startAntiFloatCheck();
     }
+    
+    private void startAntiFloatCheck() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                World world = Bukkit.getWorld("Envoy");
+                if (world == null) return; 
+
+                for (Player player : world.getPlayers()) {
+                    if (player.hasPermission("envoyblocks.flybypass")) {
+                        continue; 
+                    }
+
+                    int highestY = world.getHighestBlockYAt(player.getLocation());
+                    if (!player.isOnGround() && player.getLocation().getY() > highestY + 7) {
+                        Location loc = player.getLocation();
+                        loc.setY(highestY + 1.0);
+                        player.teleport(loc);
+                        player.sendMessage(ChatColor.RED + "Unusual activity detected. You have been returned to the ground.");
+                    }
+                }
+            }
+        }.runTaskTimer(this, 20L, 20L); 
+    }
+
 
     private void loadConfig() {
         reloadConfig();
@@ -88,7 +117,7 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
             }
         }.runTaskLater(this, despawnDelay);
     }
-
+    
     @EventHandler
     public void onToolUse(PlayerInteractEvent e) {
         if (!"Envoy".equals(e.getPlayer().getWorld().getName()) ||
@@ -130,6 +159,18 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
             e.getPlayer().sendMessage(ChatColor.RED + "You cannot equip Elytra in this world.");
         }
     }
+    
+    @EventHandler
+    public void onEntityToggleGlide(EntityToggleGlideEvent event) {
+        if (!(event.getEntity() instanceof Player)) return;
+
+        Player player = (Player) event.getEntity();
+        if ("Envoy".equals(player.getWorld().getName())) {
+            event.setCancelled(true);
+            player.sendMessage(ChatColor.RED + "Using Elytra is not permitted in this world.");
+        }
+    }
+
 
     private void removeElytra(Player player) {
         ItemStack elytra = player.getInventory().getChestplate();
@@ -139,6 +180,19 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
             player.getWorld().dropItemNaturally(player.getLocation(), elytra);
         }
     }
+    
+    @EventHandler
+    public void onPlayerToggleFlight(PlayerToggleFlightEvent event) {
+        Player player = event.getPlayer();
+        if (!"Envoy".equals(player.getWorld().getName())) return;
+
+        if (player.isGliding() || (player.getInventory().getChestplate() != null &&
+            player.getInventory().getChestplate().getType() == Material.ELYTRA)) {
+            event.setCancelled(true);
+            player.sendMessage(ChatColor.RED + "Elytra flight is disabled in this world.");
+        }
+    }
+
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
