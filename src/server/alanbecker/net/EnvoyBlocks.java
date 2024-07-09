@@ -2,19 +2,19 @@ package server.alanbecker.net;
 
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityToggleGlideEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
-import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.command.Command;
@@ -27,7 +27,6 @@ import org.bukkit.Effect;
 import org.bukkit.Location;
 
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -96,6 +95,50 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
     }
     
     @EventHandler
+    public void onPlayerTeleport(PlayerTeleportEvent event) {
+        Player player = event.getPlayer();
+        World toWorld = event.getTo().getWorld();
+        PlayerInventory inventory = player.getInventory();
+        ItemStack chestplate = inventory.getChestplate();
+        if (toWorld.getName().equals("Envoy") && (inventory.contains(Material.ELYTRA) || 
+            (chestplate != null && chestplate.getType() == Material.ELYTRA))) {
+            event.setCancelled(true);
+            player.sendMessage(ChatColor.RED + "You cannot teleport to Envoy with an Elytra.");
+        }
+    }
+
+    @EventHandler
+    public void onInventoryChange(InventoryClickEvent event) {
+        Player player = (Player) event.getWhoClicked();
+        if (player.getWorld().getName().equals("Envoy")) {
+            ItemStack currentItem = event.getCurrentItem();
+            if (currentItem != null && currentItem.getType() == Material.ELYTRA) {
+                event.setCancelled(true);
+                teleportPlayerToSpawn(player);
+            }
+        }
+    }
+
+    @EventHandler
+    public void onEquipmentChange(PlayerArmorStandManipulateEvent event) {
+        Player player = event.getPlayer();
+        if ("Envoy".equals(player.getWorld().getName()) && event.getRightClicked() instanceof ArmorStand) {
+            ItemStack item = event.getPlayerItem();
+            if (item != null && item.getType() == Material.ELYTRA) {
+                event.setCancelled(true);
+                teleportPlayerToSpawn(player);
+            }
+        }
+    }
+
+    private void teleportPlayerToSpawn(Player player) {
+        Location spawnLocation = Bukkit.getServer().getWorld("world").getSpawnLocation(); 
+        player.teleport(spawnLocation);
+        player.sendMessage(ChatColor.YELLOW + "You have been teleported to spawn for attempting to use an Elytra in Envoy.");
+    }
+
+    
+    @EventHandler
     public void onToolUse(PlayerInteractEvent e) {
         if (!"Envoy".equals(e.getPlayer().getWorld().getName()) ||
             e.getAction() != Action.RIGHT_CLICK_BLOCK ||
@@ -106,26 +149,6 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
         e.setCancelled(true);
     }
 
-    @EventHandler
-    public void onPlayerMove(PlayerMoveEvent e) {
-        if ("Envoy".equals(e.getPlayer().getWorld().getName()) && 
-            e.getPlayer().isGliding() && 
-            e.getPlayer().getInventory().getChestplate() != null && 
-            e.getPlayer().getInventory().getChestplate().getType() == Material.ELYTRA) {
-            e.getPlayer().setGliding(false);
-            e.getPlayer().sendMessage(ChatColor.RED + "You cannot use Elytra in this world.");
-        }
-    }
-
-    @EventHandler
-    public void onPlayerTeleport(PlayerTeleportEvent e) {
-        if ("Envoy".equals(e.getTo().getWorld().getName()) && 
-            e.getPlayer().getInventory().getChestplate() != null && 
-            e.getPlayer().getInventory().getChestplate().getType() == Material.ELYTRA) {
-            removeElytra(e.getPlayer());
-            e.getPlayer().sendMessage(ChatColor.RED + "Elytra is not allowed in this world.");
-        }
-    }
 
     @EventHandler
     public void onPlayerArmorStandManipulate(PlayerArmorStandManipulateEvent e) {
@@ -137,38 +160,7 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
         }
     }
     
-    @EventHandler
-    public void onEntityToggleGlide(EntityToggleGlideEvent event) {
-        if (!(event.getEntity() instanceof Player)) return;
-
-        Player player = (Player) event.getEntity();
-        if ("Envoy".equals(player.getWorld().getName())) {
-            event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + "Using Elytra is not permitted in this world.");
-        }
-    }
-
-
-    private void removeElytra(Player player) {
-        ItemStack elytra = player.getInventory().getChestplate();
-        player.getInventory().setChestplate(null);
-        HashMap<Integer, ItemStack> overflow = player.getInventory().addItem(elytra);
-        if (!overflow.isEmpty()) {
-            player.getWorld().dropItemNaturally(player.getLocation(), elytra);
-        }
-    }
-    
-    @EventHandler
-    public void onPlayerToggleFlight(PlayerToggleFlightEvent event) {
-        Player player = event.getPlayer();
-        if (!"Envoy".equals(player.getWorld().getName())) return;
-
-        if (player.isGliding() || (player.getInventory().getChestplate() != null &&
-            player.getInventory().getChestplate().getType() == Material.ELYTRA)) {
-            event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + "Elytra flight is disabled in this world.");
-        }
-    }
+   
 
     @EventHandler
     public void onPlayerDamage(EntityDamageEvent event) {
