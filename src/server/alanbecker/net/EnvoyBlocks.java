@@ -100,8 +100,10 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
         World toWorld = event.getTo().getWorld();
         PlayerInventory inventory = player.getInventory();
         ItemStack chestplate = inventory.getChestplate();
-        if (toWorld.getName().equals("Envoy") && (inventory.contains(Material.ELYTRA) || 
-            (chestplate != null && chestplate.getType() == Material.ELYTRA))) {
+        if (toWorld.getName().equals("Envoy") && 
+            (inventory.contains(Material.ELYTRA) || 
+            (chestplate != null && chestplate.getType() == Material.ELYTRA)) &&
+            !player.hasPermission("abmc.envoy.admin.bypass")) {
             event.setCancelled(true);
             player.sendMessage(ChatColor.RED + "You cannot teleport to Envoy with an Elytra.");
         }
@@ -112,12 +114,14 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
         Player player = (Player) event.getWhoClicked();
         if (player.getWorld().getName().equals("Envoy")) {
             ItemStack currentItem = event.getCurrentItem();
-            if (currentItem != null && currentItem.getType() == Material.ELYTRA) {
+            if (currentItem != null && currentItem.getType() == Material.ELYTRA && 
+                !player.hasPermission("abmc.envoy.admin.bypass")) {
                 event.setCancelled(true);
                 teleportPlayerToSpawn(player);
             }
         }
     }
+
 
     @EventHandler
     public void onEquipmentChange(PlayerArmorStandManipulateEvent event) {
@@ -151,14 +155,19 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
 
 
     @EventHandler
-    public void onPlayerArmorStandManipulate(PlayerArmorStandManipulateEvent e) {
-        if ("Envoy".equals(e.getPlayer().getWorld().getName()) && 
-            e.getArmorStandItem() != null && 
-            e.getArmorStandItem().getType() == Material.ELYTRA) {
-            e.setCancelled(true);
-            e.getPlayer().sendMessage(ChatColor.RED + "You cannot equip Elytra in this world.");
+    public void onPlayerArmorStandManipulate(PlayerArmorStandManipulateEvent event) {
+        Player player = event.getPlayer();
+        if ("Envoy".equals(player.getWorld().getName()) && 
+            event.getRightClicked() instanceof ArmorStand) {
+            ItemStack item = event.getPlayerItem();
+            if (item != null && item.getType() == Material.ELYTRA &&
+                !player.hasPermission("abmc.envoy.admin.bypass")) {
+                event.setCancelled(true);
+                teleportPlayerToSpawn(player);
+            }
         }
     }
+
     
    
 
@@ -170,11 +179,13 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
         if (!"Envoy".equals(player.getWorld().getName())) return;
 
         if (player.isGliding() || (player.getInventory().getChestplate() != null &&
-            player.getInventory().getChestplate().getType() == Material.ELYTRA)) {
+            player.getInventory().getChestplate().getType() == Material.ELYTRA) &&
+            !player.hasPermission("abmc.envoy.admin.bypass")) {
 
             event.setCancelled(false);
         }
     }
+
 
 
     @Override
