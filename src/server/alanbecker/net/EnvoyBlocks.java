@@ -45,6 +45,8 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
     private Effect primaryEffect;
     private Effect secondaryEffect;
     private List<Material> whitelist;
+    private boolean elytraEnabled;
+    private List<String> elytraDeniedWorlds;
     
     @Override
     public void onEnable() {
@@ -55,8 +57,6 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
         getLogger().info("ABMC Envoy successfully enabled!");
     }
 
-
-
     private void loadConfig() {
         reloadConfig();
         FileConfiguration config = getConfig();
@@ -66,12 +66,15 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
         whitelist = config.getStringList("whitelist").stream()
                 .map(Material::valueOf)
                 .collect(Collectors.toList());
+        elytraEnabled = config.getBoolean("elytra.enabled", true);
+        elytraDeniedWorlds = config.getStringList("elytra.denied-worlds");
     }
 
     @Override
     public void onDisable() {
         getLogger().info("ABMC Envoy successfully disabled!");
     }
+
 
     @EventHandler
     public void onPlace(BlockPlaceEvent e) {
@@ -96,25 +99,31 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
     
     @EventHandler
     public void onPlayerTeleport(PlayerTeleportEvent event) {
+        if (!elytraEnabled) return;
+        
         Player player = event.getPlayer();
         World toWorld = event.getTo().getWorld();
-        PlayerInventory inventory = player.getInventory();
-        ItemStack chestplate = inventory.getChestplate();
-        if (toWorld.getName().equals("Envoy") && 
-            (inventory.contains(Material.ELYTRA) || 
-            (chestplate != null && chestplate.getType() == Material.ELYTRA)) &&
-            !player.hasPermission("abmc.envoy.admin.bypass")) {
-            event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + "You cannot teleport to Envoy with an Elytra.");
+        if (elytraDeniedWorlds.contains(toWorld.getName())) {
+            PlayerInventory inventory = player.getInventory();
+            ItemStack chestplate = inventory.getChestplate();
+            if (inventory.contains(Material.ELYTRA) || 
+                (chestplate != null && chestplate.getType() == Material.ELYTRA)) {
+                if (!player.hasPermission("abmc.envoy.admin.bypass")) {
+                    event.setCancelled(true);
+                    player.sendMessage(ChatColor.RED + "You cannot enter " + toWorld.getName() + " with an Elytra.");
+                }
+            }
         }
     }
 
     @EventHandler
     public void onInventoryChange(InventoryClickEvent event) {
+        if (!elytraEnabled) return;
+        
         Player player = (Player) event.getWhoClicked();
-        if (player.getWorld().getName().equals("Envoy")) {
+        if (elytraDeniedWorlds.contains(player.getWorld().getName())) {
             ItemStack currentItem = event.getCurrentItem();
-            if (currentItem != null && currentItem.getType() == Material.ELYTRA && 
+            if (currentItem != null && currentItem.getType() == Material.ELYTRA &&
                 !player.hasPermission("abmc.envoy.admin.bypass")) {
                 event.setCancelled(true);
                 teleportPlayerToSpawn(player);
@@ -138,7 +147,7 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
     private void teleportPlayerToSpawn(Player player) {
         Location spawnLocation = Bukkit.getServer().getWorld("world").getSpawnLocation(); 
         player.teleport(spawnLocation);
-        player.sendMessage(ChatColor.YELLOW + "You have been teleported to spawn for attempting to use an Elytra in Envoy.");
+        player.sendMessage(ChatColor.YELLOW + "You have been teleported to spawn for attempting to use an Elytra in " + player.getWorld().getName() + ".");
     }
 
     
@@ -167,8 +176,6 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
             }
         }
     }
-
-    
    
 
     @EventHandler
@@ -187,14 +194,13 @@ public class EnvoyBlocks extends JavaPlugin implements Listener, CommandExecutor
     }
 
 
-
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-    	if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
-    	    if (!sender.hasPermission("envoyblocks.reload")) {
-    	        sender.sendMessage("You do not have permission to perform this command.");
-    	        return true;
-    	    }
+        if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
+            if (!sender.hasPermission("envoyblocks.reload")) {
+                sender.sendMessage("You do not have permission to perform this command.");
+                return true;
+            }
 
             loadConfig();
             sender.sendMessage("Configuration reloaded.");
